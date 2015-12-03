@@ -538,6 +538,7 @@ export class TimeSeries extends React.Component<VisualizationProps, TimeSeriesSt
   }
 
   render() {
+    console.log("TimeSeries", this.props, this.state);
     var { clicker, essence, stage } = this.props;
     var { loading, dataset, error, dragStart } = this.state;
     var { splits } = essence;

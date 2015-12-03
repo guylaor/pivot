@@ -7,6 +7,7 @@ import { Totals } from './totals/totals';
 import { Table } from './table/table';
 import { TimeSeries } from './time-series/time-series';
 import { BarChart } from './bar-chart/bar-chart';
+import { Histogram } from './histogram/histogram';
 import { Geo } from './geo/geo';
 
 export var visualizations: List<Manifest> = List([
@@ -14,5 +15,6 @@ export var visualizations: List<Manifest> = List([
   Table,
   TimeSeries,
   BarChart,
-  Geo
+  Geo,
+  Histogram
 ]);
