@@ -229,7 +229,58 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
     this.mounted = true;
     var { essence } = this.props;
     this.fetchData(essence);
+
   }
+
+  componentDidUpdate() {
+
+    /*
+      var { clicker, essence, stage } = this.props;
+      var { loading, error, flatData, scrollLeft, scrollTop, hoverMeasure, hoverRow, dataset } = this.state;
+      var { splits } = essence;
+
+      var segmentTitle = splits.getTitle(essence.dataSource.dimensions);
+      var commonSort = essence.getCommonSort();
+      var commonSortName = commonSort ? (commonSort.expression as RefExpression).name : null;
+
+      var sortArrowIcon = commonSort ? React.createElement(SvgIcon, {
+        svg: require('../../icons/sort-arrow.svg'),
+        className: 'sort-arrow ' + commonSort.direction
+      }) : null;
+
+      var cornerSortArrow: JSX.Element = null;
+      if (commonSortName === SEGMENT) {
+        cornerSortArrow = sortArrowIcon;
+      }
+      var measuresArray = essence.getMeasures().toArray();
+
+      // chart starts from here
+      var numberOfColumns = Math.ceil(stage.width / MAX_GRAPH_WIDTH);
+      var measureGraphs: Array<JSX.Element>;
+      var getX = 1; //(d: Datum) => midpoint(d[TIME_SEGMENT]);
+      var measures = essence.getMeasures().toArray();
+      console.log("measures", measures);
+
+      var parentWidth = stage.width - H_PADDING * 2;
+      var graphHeight = Math.max(MIN_GRAPH_HEIGHT, Math.floor((stage.height - X_AXIS_HEIGHT) / measures.length));
+      var svgStage = new Stage({
+        x: H_PADDING,
+        y: 0,
+        width: Math.floor(parentWidth / numberOfColumns),
+        height: graphHeight - 1 // -1 for border
+      });
+
+      var scaleX = d3.time.scale()
+      ////guy  .domain([timeRange.start, timeRange.end])
+        .range([0, svgStage.width - Y_AXIS_WIDTH]);
+
+      var xTicks = scaleX.ticks();
+
+      measureGraphs = measures.map((measure, chartIndex) => {
+        return this.renderChart(dataset, measure, chartIndex, stage, svgStage, getX, scaleX, xTicks);
+      });
+      */
+    }
 
   componentWillUnmount() {
     this.mounted = false;
@@ -348,30 +399,20 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
     if (!dataset) {
       return <div><svg id={chartID} className="chart"></svg></div>;
     }
-
+    var measureName = measure.name;
     var myDatum: Datum = dataset.data[0];
     var myDataset: Dataset = myDatum[SPLIT];
-
-    var values = [
-      {name: "guy", value: 2},
-      {name: "rob2", value: 12},
-      {name: "rob3", value: 22},
-      {name: "vlad4", value: 4},
-      {name: "Vance5", value: 18},
-     ];
-
+    var getY = (d: Datum) => d[measureName];
     console.log("myDataSet", myDataset);
     var  data = myDataset.data;
-
-    console.log( values );
-    console.log( values.length );
 
     // A formatter for counts.
     var formatCount = d3.format(",.0f");
 
     var margin = {top: 10, right: 30, bottom: 30, left: 30},
         width = stage.width - margin.left - margin.right,
-        height = ( stage.height / dataset.attributes.length) - margin.top - margin.bottom; //
+        height = ( stage.height / dataset.attributes.length);
+        //height = ( stage.height / dataset.attributes.length) - margin.top - margin.bottom; //
 
 
     var x = d3.scale.ordinal()
@@ -388,7 +429,9 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
         .scale(y)
         .orient("left");
 
-    var chart = d3.select( "#" + chartID )
+    var chart = d3.select( "#" + chartID ).html("");
+
+    chart = d3.select( "#" + chartID )
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
@@ -397,7 +440,7 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
     //var data = values;
 
     x.domain(data.map(function(d) { return d['SEGMENT']; }));
-    y.domain([0, d3.max(data, function(d) { return d['count']; })]);
+    y.domain([0, d3.max(data, function(d) { return getY(d); })]);
 
     chart.append("g")
         .attr("class", "x axis")
@@ -413,13 +456,17 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
       .enter().append("rect")
         .attr("class", "bar")
         .attr("x", function(d) { return x(d['SEGMENT']); })
-        .attr("y", function(d) { return y(d['count']); })
-        .attr("height", function(d) { return height - y(d['count']); })
+        .attr("y", function(d) { return y(getY(d)); })
+        .attr("height", function(d) { return height - y(getY(d)); })
         .attr("width", x.rangeBand());
 
-
-
-    return <div><svg id={chartID} className="chart"></svg></div>;
+    return <div key={measureName} >
+            <div className="measure-label">
+              <span className="measure-title">{measure.title}</span>
+              <span className="colon">: </span>
+              <span className="measure-value">{measure.formatFn(myDatum[measureName])}</span>
+            </div>
+            <svg id={chartID} className="chart"></svg></div>;
   }
 
   type(d: any) {
@@ -454,6 +501,7 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
     var measureGraphs: Array<JSX.Element>;
     var getX = 1; //(d: Datum) => midpoint(d[TIME_SEGMENT]);
     var measures = essence.getMeasures().toArray();
+    console.log("measures", measures);
 
     var parentWidth = stage.width - H_PADDING * 2;
     var graphHeight = Math.max(MIN_GRAPH_HEIGHT, Math.floor((stage.height - X_AXIS_HEIGHT) / measures.length));
@@ -474,147 +522,6 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
       return this.renderChart(dataset, measure, chartIndex, stage, svgStage, getX, scaleX, xTicks);
     });
 
-
-
-    var headerColumns = measuresArray.map((measure, i) => {
-      return <div
-        className={'measure-name' + (measure === hoverMeasure ? ' hover' : '')}
-        key={measure.name}
-      >
-        <div className="title-wrap">{measure.title}</div>
-        {commonSortName === measure.name ? sortArrowIcon : null}
-      </div>;
-    });
-
-    var segments: JSX.Element[] = [];
-    var rows: JSX.Element[] = [];
-    var highlighter: JSX.Element = null;
-    var highlighterStyle: any = null;
-    if (flatData) {
-      var formatters = measuresArray.map(measure => {
-        var measureName = measure.name;
-        var measureValues = flatData.map((d: Datum) => d[measureName]);
-        return formatterFromData(measureValues, measure.format);
-      });
-
-      var highlightDelta: Filter = null;
-      if (essence.highlightOn(Histogram.id)) {
-        highlightDelta = essence.highlight.delta;
-      }
-
-      const skipNumber = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT));
-      const lastElementToShow = Math.min(flatData.length, Math.ceil((scrollTop + stage.height) / ROW_HEIGHT));
-
-      var rowY = skipNumber * ROW_HEIGHT;
-      for (var i = skipNumber; i < lastElementToShow; i++) {
-        var d = flatData[i];
-        console.log("d", d);
-        var nest = d['__nest'];
-        var segmentValue = d[SEGMENT];
-        var segmentName = nest ? formatSegment(segmentValue) : 'Total';
-        var left = Math.max(0, nest - 1) * INDENT_WIDTH;
-        var segmentStyle = { left: left, width: SEGMENT_WIDTH - left, top: rowY };
-        var hoverClass = d === hoverRow ? ' hover' : '';
-
-        var selected = false;
-        var selectedClass = '';
-        if (highlightDelta) {
-          selected = highlightDelta && highlightDelta.equals(getFilterFromDatum(splits, d));
-          selectedClass = selected ? 'selected' : 'not-selected';
-        }
-
-        segments.push(<div
-          className={'segment nest' + nest + ' ' + selectedClass + hoverClass}
-          key={'_' + i}
-          style={segmentStyle}
-        >{segmentName}</div>);
-
-        var row = measuresArray.map((measure, j) => {
-          var measureValue = d[measure.name];
-          var measureValueStr = formatters[j](measureValue);
-          return <div className="measure" key={measure.name}>{measureValueStr}</div>;
-        });
-        console.log("row", row);
-
-        var rowStyle = { top: rowY };
-        rows.push(<div
-          className={'row nest' + nest + ' ' + selectedClass + hoverClass}
-          key={'_' + i}
-          style={rowStyle}
-        >{row}</div>);
-
-        if (!highlighter && selected) {
-          highlighterStyle = {
-            top: rowY,
-            left
-          };
-          highlighter = <div className='highlighter' key='highlight' style={highlighterStyle}></div>;
-        }
-
-        rowY += ROW_HEIGHT;
-      }
-    }
-
-    var rowWidth = MEASURE_WIDTH * measuresArray.length + ROW_PADDING_RIGHT;
-
-    // Extended so that the horizontal lines extend fully
-    var rowWidthExtended = rowWidth;
-    if (stage) {
-      rowWidthExtended = Math.max(
-        rowWidthExtended,
-        stage.width - (SPACE_LEFT + SEGMENT_WIDTH + SPACE_RIGHT)
-      );
-    }
-
-    const headerStyle = {
-      width: rowWidthExtended,
-      left: -scrollLeft
-    };
-
-    const segmentsStyle = {
-      top: -scrollTop
-    };
-
-    const bodyHeight = flatData ? flatData.length * ROW_HEIGHT : 0;
-    const bodyStyle = {
-      left: -scrollLeft,
-      top: -scrollTop,
-      width: rowWidthExtended,
-      height: bodyHeight
-    };
-
-    const highlightStyle = {
-      top: -scrollTop
-    };
-
-    var horizontalScrollShadowStyle: any = { display: 'none' };
-    if (scrollTop) {
-      horizontalScrollShadowStyle = {
-        width: SEGMENT_WIDTH + rowWidthExtended - scrollLeft
-      };
-    }
-
-    var verticalScrollShadowStyle: any = { display: 'none' };
-    if (scrollLeft) {
-      verticalScrollShadowStyle = {};
-    }
-
-    const scrollerStyle = {
-      width: SPACE_LEFT + SEGMENT_WIDTH + rowWidth + SPACE_RIGHT,
-      height: HEADER_HEIGHT + bodyHeight + BODY_PADDING_BOTTOM
-    };
-
-    var highlightControls: JSX.Element = null;
-    if (highlighter) {
-      highlightControls = React.createElement(HighlightControls, {
-        clicker,
-        orientation: 'horizontal',
-        style: {
-          top: HEADER_HEIGHT + highlighterStyle.top - scrollTop + HIGHLIGHT_CONTROLS_TOP
-        }
-      });
-    }
-
     var loader: JSX.Element = null;
     if (loading) {
       loader = <Loader/>;
@@ -628,39 +535,8 @@ export class Histogram extends React.Component<VisualizationProps, HistogramStat
     return <div id="wrapper">
       <div id="histogram-chart">{measureGraphs}</div>
 
-        <div className="table">
-          <div className="corner">
-            <div className="corner-wrap">{segmentTitle}</div>
-            {cornerSortArrow}
-          </div>
-          <div className="header-cont">
-            <div className="header" style={headerStyle}>{headerColumns}</div>
-          </div>
-          <div className="segments-cont">
-            <div className="segments" style={segmentsStyle}>{segments}</div>
-          </div>
-          <div className="body-cont">
-            <div className="body" style={bodyStyle}>{rows}</div>
-          </div>
-          <div className="highlight-cont">
-            <div className="highlight" style={highlightStyle}>{highlighter}</div>
-          </div>
-          <div className="horizontal-scroll-shadow" style={horizontalScrollShadowStyle}></div>
-          <div className="vertical-scroll-shadow" style={verticalScrollShadowStyle}></div>
-          {queryError}
-          {loader}
-          <div
-            className="scroller-cont"
-            ref="base"
-            onScroll={this.onScroll.bind(this)}
-            onMouseLeave={this.onMouseLeave.bind(this)}
-            onMouseMove={this.onMouseMove.bind(this)}
-            onClick={this.onClick.bind(this)}
-          >
-            <div className="scroller" style={scrollerStyle}></div>
-          </div>
-          {highlightControls}
-        </div>
+      {queryError}
+      {loader}
     </div>;
   }
 }
